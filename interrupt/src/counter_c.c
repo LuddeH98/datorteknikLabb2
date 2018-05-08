@@ -2,8 +2,8 @@
 #include <linux/kernel.h>		// Needed for KERN_INFO
 #include <linux/interrupt.h>	// Needed for register_irq
 
-#define IRQ1 0	// Byt ut 0 mot IRQ för knapp som räknar upp
-#define IRQ2 0	// Byt ut 0 mot IRQ för knapp som räknar ner
+#define IRQ1 175	// Byt ut 0 mot IRQ för knapp som räknar upp
+#define IRQ2 176	// Byt ut 0 mot IRQ för knapp som räknar ner
 
 /*
  * Enables access to the gpio
@@ -48,9 +48,9 @@ static void __exit btnrpi_exit(void)
 	printk(KERN_INFO "COUNTER - Unloading driver\n");
 	setdown();
 	// free irqs
-	free_irq(IRQ1, NULL);	
-	free_irq(IRQ2, NULL);	
-	
+	free_irq(IRQ1, NULL);
+	free_irq(IRQ2, NULL);
+
 }
 
 MODULE_LICENSE("GPLv3");
