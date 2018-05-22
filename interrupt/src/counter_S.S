@@ -50,20 +50,25 @@ idiv:
 
 
 	pin_mode:
-		PUSH {r4,r5,r6,r7,r11,lr}
+		PUSH {lr}
 		MOV r0, r10
 		MOV r7,r1
+
+
 		NOP
 		LDR r4, =registers
 		LDR r4,[r4]
+		MOV r5, r4		//get old value
 		MOV r1,#10
+
 		BL idiv			//r0 = PIN/10, r1 = PIN%10
 		MOV r6,#4
 		MUL r0,r6
 		ADD r4,r0
-		LDR r5,[r4]		//get old value
+
 		MOV r6,#3
 		MUL r1,r6
+
 		CMP r7,#1
 		BEQ pin_out
 		pin_in:
@@ -78,8 +83,34 @@ idiv:
 						ORR r5,r6
 						B pin_mode_end
 		pin_mode_end:
-						STR r5,[r4]
-						POP {r4,r5,r6,r7,r11,pc}
+						//STR r5,[r4]
+						POP {pc}
+
+	pin_high:
+		PUSH {r4}
+		MOV r0, r10
+		MOV r7,r1
+
+
+		NOP
+		LDR r4, =registers
+		LDR r4,[r4]
+		MOV r5, r4		//get old value
+		MOV r1,#32
+
+		BL idiv			//r0 = PIN/32, r1 = PIN%32
+		MOV r6,#4
+		ADD r0, #7
+		MUL r0,r6
+		ADD r4,r0
+
+		MOV r6,#1		// 7 = 0b111
+		LSL r6,r1
+		MVN r6,r6
+		AND r5,r6
+
+		POP {r4,pc}
+
 
 
 /*
@@ -87,8 +118,6 @@ idiv:
 */
 .GLOBAL counter_isr_up
 counter_isr_up:
-
-
 
 
 /*
@@ -102,9 +131,8 @@ counter_isr_down:
  */
 .GLOBAL setup
 setup:
-
-/*calc.Virt.Addr*/
 	PUSH {lr}
+/*calc.Virt.Addr*/
 	LDR  r4, =baseAddr
 	LDR  r1, [r4]
 	LDR  r2, =#0x00FFFFFF
@@ -121,11 +149,22 @@ setup:
 	LDR  r2, =GPIO_LED
 	MOV  r1, #1
 	BL pin_mode
-/*Print virtual adress*/
+
+	LDR		r0, =virtAddrText
+	BL		printk
+
+	POP {pc}
+	//BX lr
+	/*
+
+		PUSH {lr}
+		LDR  r2, =GPIO_LED
+		MOV  r1, #1
+		BL pin_high
+	//Print virtual adress
 		LDR		r0, =virtAddrText
 		BL		printk
-	POP {pc}
-	BX lr
+	*/
 
 /*
 ** Ta bort åtkomst till GPIO
