@@ -50,10 +50,10 @@ idiv:
 
 
 	pin_mode:
-		PUSH {lr}
+		PUSH {r4, lr}
+
 		MOV r0, r10
 		MOV r7,r1
-
 
 		NOP
 		LDR r4, =registers
@@ -83,8 +83,13 @@ idiv:
 						ORR r5,r6
 						B pin_mode_end
 		pin_mode_end:
-						//STR r5,[r4]
-						POP {pc}
+						POP {r4, pc}
+
+
+		/*
+
+
+		*/
 
 	pin_high:
 		PUSH {r4}
@@ -132,7 +137,8 @@ counter_isr_down:
 .GLOBAL setup
 setup:
 	PUSH {lr}
-/*calc.Virt.Addr*/
+	/*calc.Virt.Addr*/
+
 	LDR  r4, =baseAddr
 	LDR  r1, [r4]
 	LDR  r2, =#0x00FFFFFF
@@ -146,12 +152,14 @@ setup:
 	LDR  r2, =virtBaseAddr
 	STR  r1, [r2]
 	MOV  r10, r1
-	LDR  r2, =GPIO_LED
+	MOV  r2, #17
 	MOV  r1, #1
+
 	BL pin_mode
 
 	LDR		r0, =virtAddrText
 	BL		printk
+
 
 	POP {pc}
 	//BX lr
