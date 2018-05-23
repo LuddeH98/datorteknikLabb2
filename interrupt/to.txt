@@ -1,0 +1,58 @@
+/*
+        PUSH {r4, lr}
+        MOV r9, r3 //GPIO_ADDR
+        MOV r8, r2 // PIN NR
+        MOV r7,r1 // PIN MODE
+        NOP
+        MOV r0, r8
+        MOV r1,#10
+        BL idiv			//r0 = PIN/10, r1 = PIN%10
+        MOV r6,#4
+        MUL r0,r6
+        ADD r0,r9
+
+        MOV r6,#3
+        MUL r1,r6
+
+        CMP r7,#1
+        BEQ pin_out
+        pin_in:
+                MOV r6,#7		// 7 = 0b111
+                LSL r6,r1
+                MVN r6,r6
+                AND r1,r6
+                B pin_mode_end
+        pin_out:
+                MOV r6,#1
+                LSL r6,r1
+                ORR r1,r6
+                B pin_mode_end
+        pin_mode_end:
+                STR r1, [r0]
+                POP {r4, pc}
+
+
+*/
+
+pin_high:
+        PUSH {r4, lr}
+        MOV r9, r3 //GPIO_ADDR
+        MOV r8, r2 // PIN NR
+        MOV r7,r1 // PIN MODE
+
+        MOV r0, r8
+        MOV r1,#32
+        BL idiv			//r0 = PIN/10, r1 = PIN%10
+        ADD r0, #10
+        MOV r6,#4
+        MUL r0,r6
+        ADD r0,r9
+
+        MOV r6,#1
+        LSL r6,r1
+
+        STR r1, [r0]
+        POP {r4, pc}
+
+
+pin_low:
