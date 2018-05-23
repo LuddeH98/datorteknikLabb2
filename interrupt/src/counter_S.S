@@ -26,6 +26,20 @@ registers:
 ** Division
 
 */
+get_gipo_addr:
+	PUSH {r4, r5, lr}
+	LDR  r4, =baseAddr
+	LDR  r1, [r4]
+	LDR  r2, =#0x00FFFFFF
+	AND  r2, r1, r2
+	LSR  r3, r1, #4
+	LDR  r0, =#0x0F000000
+	AND  r3, r3, r0
+	ADD  r2, r2, r3
+	LDR  r3, =#0xF0000000
+	ADD  r1, r2, r3
+	POP {r4, r5, PC}
+
 idiv:
 	/* r0 innehåller N */
 	/* r1 innehåller D */
@@ -49,47 +63,90 @@ idiv:
 */
 
 
-	pin_mode_output:
-		PUSH {r4, r5, lr}
+pin_mode_output:
+	PUSH {r4, r5, lr}
 
-		MOV r4, r0
-		MOV r5, r1
-		MOV r1, r10
-		BL idiv
-		MOV r2, #4
-		MUL r0, r2
-		ADD r0, r0, r5
-		MOV r2, #3
-		MUL r1, r2
-		MOV r2, #1
-		LSL r2, r1
-		LDR r1, [r0]
-		ORR r1, r2
-		STR r1, [r0]
+	//(gpio_addr + (4 * (gpio_nr/10)))
+	MOV r4, r0 // Pin nr
+	MOV r5, r1 // basaddress
+	MOV r1, #10
+	BL idiv
+	MOV r2, #4
+	MUL r0, r2
+	ADD r0, r0, r5
+	MOV r2, #3
+	MUL r1, r2
 
-		POP {r4, r5, PC}
+	// |= (1 << (((gpio_nr)%10)*3))
+	MOV r2, #1
+	LSL r2, r1
+	LDR r1, [r0]
+	ORR r1, r2
+	STR r1, [r0]
 
-	pin_mode_input:
-		PUSH {r4, r5, lr}
+	POP {r4, r5, PC}
 
-		MOV r4, r0
-		MOV r5, r1
-		MOV r1, r10
-		BL idiv
-		MOV r2, #4
-		MUL r0, r2
-		ADD r0, r0, r5
-		MOV r2, #3
-		MUL r1, r2
-		MOV r2, #7
-		LSL r2, r1
-		LDR r1, [r0]
-		ORR r1, r2
-		STR r1, [r0]
+//
+pin_mode_input:
+	PUSH {r4, r5, lr}
 
-		POP {r4, r5, PC}
+	// (gpio_addr + (4 * (gpio_nr/10)))
+	MOV r4, r0 // Pin nr
+	MOV r5, r1 // basaddress
+	MOV r1, #10
+	BL idiv
+	MOV r2, #4
+	MUL r0, r2
+	ADD r0, r0, r5
+	MOV r2, #3
+	MUL r1, r2
 
-	set_pin_high:
+	// &= (1 << (((gpio_nr)%10)*3))
+	MOV r2, #7
+	LSL r2, r1
+	LDR r1, [r0]
+	MVN r1, r1
+	AND r1, r2
+	STR r1, [r0]
+
+	POP {r4, r5, PC}
+
+set_pin_high:
+	PUSH {r4, r5, lr}
+	MOV r4, r0 // Pin nr
+	MOV r5, r1 // basaddress
+
+	MOV r1,#32
+	BL idiv			//r0 = PIN/10, r1 = PIN%10
+	ADD r0, #10
+	MOV r2,#4
+	MUL r0,r2
+	ADD r0,r5
+
+	MOV r2,#1
+	LSL r2,r1
+
+	STR r1, [r0]
+	POP {r4, r5, PC}
+
+set_pin_low:
+	PUSH {r4, r5, lr}
+	MOV r4, r0 // Pin nr
+	MOV r5, r1 // basaddress
+
+	MOV r1,#32
+	BL idiv			//r0 = PIN/10, r1 = PIN%10
+	ADD r0, #7
+	MOV r2,#4
+	MUL r0,r2
+	ADD r0,r5
+
+	MOV r2,#1
+	LSL r2,r1
+
+	STR r1, [r0]
+	POP {r4, r5, PC}
+
 
 
 
@@ -115,47 +172,18 @@ setup:
 	PUSH {lr}
 	/*calc.Virt.Addr*/
 
-	LDR  r4, =baseAddr
-	LDR  r1, [r4]
-	LDR  r2, =#0x00FFFFFF
-	AND  r2, r1, r2
-	LSR  r3, r1, #4
-	LDR  r0, =#0x0F000000
-	AND  r3, r3, r0
-	ADD  r2, r2, r3
-	LDR  r3, =#0xF0000000
-	ADD  r1, r2, r3
-	MOV  r3, r1
-	MOV  r2, #17
-	MOV  r1, #1
+	BL get_gipo_addr
+	MOV  r0, #18
+	BL pin_mode_output
 
-	BL pin_mode
-
-	//PUSH {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11}
 	MOV r1, r0
 	LDR		r0, =virtAddrText
 	BL		printk
-	//POP {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11}
 
-
-	LDR  r4, =baseAddr
-	LDR  r1, [r4]
-	LDR  r2, =#0x00FFFFFF
-	AND  r2, r1, r2
-	LSR  r3, r1, #4
-	LDR  r0, =#0x0F000000
-	AND  r3, r3, r0
-	ADD  r2, r2, r3
-	LDR  r3, =#0xF0000000
-	ADD  r1, r2, r3
-	LDR  r2, =virtBaseAddr
-	STR  r1, [r2]
-	MOV  r3, r1
-	MOV  r2, #17
-	MOV  r1, #1
-
-	BL pin_high
-
+	BL get_gipo_addr
+	MOV  r0, #18
+	BL set_pin_high
+	
 	MOV r1, r0
 	LDR		r0, =virtAddrText
 	BL		printk
